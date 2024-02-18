@@ -4,7 +4,8 @@ Integrated with Interactive Broker's API (IBKR), compute and plot various metric
 
 ## Script Outputs
 
-![Efficient Frontier](assets/optimal_sharpe.JPG)
+![Efficient Frontier](assets/newplot.png)
+
+![Console Output](assets/optimal_sharpe.JPG)
 
 
-![Console Output]()
