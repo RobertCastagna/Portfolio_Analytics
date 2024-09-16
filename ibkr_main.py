@@ -1,50 +1,31 @@
 #https://interactivebrokers.github.io/tws-api/
 # .\env\Scripts\activate
 
+import asyncio
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
-from ibapi.contract import Contract
-from threading import Condition
-import threading
-import time
 
-
-class IBapi(EWrapper, EClient):
+class AsyncIBWrapper(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
-        self.positions = {}
-        self.positions_received = Condition()
+        self.requests = {}
 
-    def position(self, account, contract, pos, avgCost):
-        super().position(account, contract, pos, avgCost)
-        key = contract.symbol + contract.currency
-        self.positions[key] = pos
+    def nextValidId(self, orderId: int):
+        super().nextValidId(orderId)
+        print(f"Connected. Next valid order ID: {orderId}")
+        self.start_requests()
 
-    def positionEnd(self):
-        super().positionEnd()
-        with self.positions_received:
-            self.positions_received.notify_all()
+    def start_requests(self):
+        pass  # Override this method to start your requests
 
-    def get_positions(self):
-        with self.positions_received:
-            self.positions_received.wait()
-        return self.positions
+    def error(self, reqId, errorCode, errorString):
+        print(f"Error {errorCode}: {errorString}")
 
-def main():
-    app = IBapi()
-    app.connect('127.0.0.1', 7497, 123)
+    def create_future(self, reqId):
+        future = asyncio.Future()
+        self.requests[reqId] = future
+        return future
 
-    # Request current positions
-    app.reqPositions()
-
-    # Start a separate thread for the event loop
-    threading.Thread(target=app.run).start()
-
-    # Wait for a short time to allow the position updates to be processed
-    time.sleep(1)
-
-    # Print the current positions
-    print(app.get_positions())
-
-if __name__ == "__main__":
-    main()
+    def complete_future(self, reqId):
+        if reqId in self.requests:
+            self.requests[reqId].set_result(True)
